@@ -1,6 +1,6 @@
 ---
 title: Design System & Landing Page
-status: todo
+status: in_progress
 priority: high
 type: feature
 tags: [frontend, design, landing]
@@ -13,9 +13,9 @@ position: 2
 Implement sage/terracotta/champagne color system, Cormorant Garamond + DM Sans + JetBrains Mono fonts. Build landing page with hero, calculator, testimonials, PDF guides, brokers, pricing sections. Live crawler ticker.
 
 ## Checklist
-- [ ] Set up color tokens in globals.css (sage-800 through sage-50, terracotta, champagne, ivory background)
-- [ ] Import Google Fonts (Cormorant Garamond, DM Sans, JetBrains Mono)
-- [ ] Register fonts in tailwind.config.ts
+- [x] Set up color tokens in globals.css (sage-800 through sage-50, terracotta, champagne, ivory background)
+- [x] Import Google Fonts (Cormorant Garamond, DM Sans, JetBrains Mono)
+- [x] Register fonts in tailwind.config.ts
 - [ ] Create crawler ticker component (live prices, 55s scroll animation)
 - [ ] Build landing page header with logo and navigation
 - [ ] Build hero section (two-column with preview dashboard card)
