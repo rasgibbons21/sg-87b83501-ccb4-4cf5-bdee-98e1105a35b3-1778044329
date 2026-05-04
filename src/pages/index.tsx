@@ -1,12 +1,27 @@
-import React from 'react'
+import { CrawlerTicker } from "@/components/CrawlerTicker";
+import { Header } from "@/components/landing/Header";
+import { Hero } from "@/components/landing/Hero";
+import { Calculator } from "@/components/landing/Calculator";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { PDFGuides } from "@/components/landing/PDFGuides";
+import { Brokers } from "@/components/landing/Brokers";
+import { Pricing } from "@/components/landing/Pricing";
+import { Footer } from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-foreground">Hello World</h1>
-        <p className="text-lg text-muted-foreground">This is going to be your softgen app, start by describing your project.</p>
-      </div>
-    </main>
-  )
+    <>
+      <CrawlerTicker />
+      <Header />
+      <main className="min-h-screen bg-ivory">
+        <Hero />
+        <Calculator />
+        <Testimonials />
+        <PDFGuides />
+        <Brokers />
+        <Pricing />
+      </main>
+      <Footer />
+    </>
+  );
 }
