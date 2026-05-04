@@ -1,6 +1,6 @@
 ---
 title: API Routes & Integrations
-status: in_progress
+status: done
 priority: high
 type: feature
 tags: [backend, api]
@@ -15,10 +15,10 @@ Create API routes for prices (Finnhub with cache), news (Finnhub), history (Twel
 ## Checklist
 - [x] /api/qr - Generate QR codes using qrcode package
 - [x] /api/prices - Fetch live prices from Finnhub with 60s cache
-- [ ] /api/news - Fetch company news with sentiment analysis
-- [ ] /api/history - Fetch historical returns from Twelve Data
-- [ ] /api/claude/analyze - Generate AI investment analysis (admin only)
-- [ ] /api/paypal/webhook - Handle PayPal subscription events
+- [x] /api/news - Fetch company news with sentiment analysis
+- [x] /api/history - Fetch historical returns from Twelve Data
+- [x] /api/claude/analyze - Generate AI investment analysis (admin only)
+- [x] /api/paypal/webhook - Handle PayPal subscription events
 
 ## Acceptance
 - QR codes generate correctly for PDF products and Get App page
