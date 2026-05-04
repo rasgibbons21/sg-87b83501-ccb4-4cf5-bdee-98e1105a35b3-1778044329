@@ -1,6 +1,6 @@
 ---
 title: Authentication & Onboarding
-status: in_progress
+status: done
 priority: high
 type: feature
 tags: [auth, onboarding]
@@ -15,15 +15,15 @@ Build auth modal with sign in/sign up + PayPal integration. Create 5-step onboar
 ## Checklist
 - [x] Create AuthModal component with sign in and sign up views
 - [x] Wire up Supabase auth (signInWithPassword, signUp)
-- [ ] Add PayPal subscription button for member plan
-- [ ] Create onboarding page with 5 steps
-- [ ] Step 1: Welcome screen
-- [ ] Step 2: Your Situation (4 selectable cards)
-- [ ] Step 3: Your Budget (income/expense inputs with live calculations)
-- [ ] Step 4: Your Goals (3 selectable cards, child age/target inputs)
-- [ ] Step 5: Your First Pick (personalized recommendation)
-- [ ] Save progress to profiles.onboarding_step
-- [ ] Mark onboarding_completed on finish
+- [x] Add PayPal subscription button for member plan
+- [x] Create onboarding page with 5 steps
+- [x] Step 1: Welcome screen
+- [x] Step 2: Your Situation (4 selectable cards)
+- [x] Step 3: Your Budget (income/expense inputs with live calculations)
+- [x] Step 4: Your Goals (3 selectable cards, child age/target inputs)
+- [x] Step 5: Your First Pick (personalized recommendation)
+- [x] Save progress to profiles.onboarding_step
+- [x] Mark onboarding_completed on finish
 
 ## Acceptance
 - Auth modal opens, sign in/up works
