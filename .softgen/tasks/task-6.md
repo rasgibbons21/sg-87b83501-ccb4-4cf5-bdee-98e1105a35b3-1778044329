@@ -1,6 +1,6 @@
 ---
 title: API Routes & Integrations
-status: todo
+status: in_progress
 priority: high
 type: feature
 tags: [backend, api]
@@ -10,19 +10,20 @@ position: 6
 ---
 
 ## Notes
-7 API routes for prices (Finnhub), news (Finnhub), history (Twelve Data), Claude analysis, PayPal webhook, QR generation.
+Create API routes for prices (Finnhub with cache), news (Finnhub), history (Twelve Data), Claude analysis, PayPal webhook, and QR code generation.
 
 ## Checklist
-- [ ] Create /api/prices (Finnhub integration with 60s cache)
-- [ ] Create /api/news (Finnhub company news with sentiment)
-- [ ] Create /api/history (Twelve Data historical returns)
-- [ ] Create /api/claude/analyze (Claude AI investment analysis)
-- [ ] Create /api/paypal/webhook (PayPal subscription events)
-- [ ] Create /api/qr (QR code SVG generation)
-- [ ] Install qrcode npm package
+- [x] /api/qr - Generate QR codes using qrcode package
+- [x] /api/prices - Fetch live prices from Finnhub with 60s cache
+- [ ] /api/news - Fetch company news with sentiment analysis
+- [ ] /api/history - Fetch historical returns from Twelve Data
+- [ ] /api/claude/analyze - Generate AI investment analysis (admin only)
+- [ ] /api/paypal/webhook - Handle PayPal subscription events
 
 ## Acceptance
-- All API routes return correct data
-- Price cache works (60s staleness check)
+- QR codes generate correctly for PDF products and Get App page
+- Live prices update every 60 seconds via cache
+- News sentiment displays (positive/negative/neutral)
+- Claude generates investment rationale on demand
 - PayPal webhook handles subscription events correctly
 - Claude API generates investment analysis
