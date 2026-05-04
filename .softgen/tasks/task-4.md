@@ -1,6 +1,6 @@
 ---
 title: Member App (8 Pages)
-status: todo
+status: in_progress
 priority: high
 type: feature
 tags: [frontend, member-app]
@@ -10,20 +10,20 @@ position: 4
 ---
 
 ## Notes
-Build 8 member app pages: dashboard, picks, watchlist, budget, college fund, brokers, guides, get app. Persistent layout with header and crawler ticker.
+Build 8 authenticated member pages: Dashboard with stats and featured picks, Picks with filter tabs and price updates, Watchlist with tabs and news feed, Budget calculator with expense bars, College Fund with projections and chart, Brokers with affiliate tracking, Guides with QR codes, Get App with PWA install instructions.
 
 ## Checklist
-- [ ] Create member app layout with header and navigation
-- [ ] Build dashboard page (morning brief, stats, featured picks)
-- [ ] Build picks page (grid with live prices, signals, AI rationale)
-- [ ] Build watchlist page (tabs for ETFs/Stocks/College, news feed, allocation chart)
-- [ ] Build budget page (expense inputs, horizontal bar chart, investing budget calculation)
-- [ ] Build college fund page (4 sliders, projection card, line chart, recommended portfolio)
-- [ ] Build brokers page (6 cards with affiliate tracking)
-- [ ] Build guides page (PDF products with QR codes, 20% off badges)
-- [ ] Build get app page (QR code, install instructions)
+- [ ] Dashboard page with morning brief, stat cards, featured picks, college snapshot, weekly tip
+- [ ] Picks page with All/ETFs/Stocks/Bonds filter tabs, pick cards with live prices, compounding boxes, AI rationale
+- [ ] Watchlist page with ETFs/Stocks/College tabs, news feed with sentiment, allocation donut chart
+- [ ] Budget page with income/expense inputs, animated bar chart, college fund and investing budget highlights
+- [ ] College Fund page with 4 range sliders, projection card, line chart, recommended portfolio
+- [ ] Brokers page with 6 broker cards and affiliate click logging
+- [ ] Guides page with PDF products from Supabase, QR codes, 20% member discount badge
+- [ ] Get App page with QR code, copy link button, install instructions for iOS/Android/Mac/Windows
 
 ## Acceptance
-- All 8 pages render with proper data from Supabase
+- All 8 pages render with AppLayout
+- Pages fetch real data from Supabase
 - Live price updates every 60 seconds
 - Charts display correctly using Chart.js
