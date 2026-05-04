@@ -1,6 +1,6 @@
 ---
 title: Database Setup & Schema
-status: in_progress
+status: done
 priority: urgent
 type: feature
 tags: [database, supabase, backend]
@@ -13,17 +13,17 @@ position: 1
 Create complete database schema for Bloom investment platform. 10 tables with RLS policies, auto-create profile trigger, seed data for picks/testimonials/products.
 
 ## Checklist
-- [ ] Create profiles table extending auth.users with trigger
-- [ ] Create subscriptions table
-- [ ] Create picks table with 9 seeded picks
-- [ ] Create watchlist table
-- [ ] Create journal table
-- [ ] Create testimonials table with 3 seeded entries
-- [ ] Create pdf_products table with 6 seeded products
-- [ ] Create affiliate_clicks table
-- [ ] Create admin_settings table
-- [ ] Create price_cache table
-- [ ] Set up all RLS policies per table requirements
+- [x] Create profiles table extending auth.users with trigger
+- [x] Create subscriptions table
+- [x] Create picks table with 9 seeded picks
+- [x] Create watchlist table
+- [x] Create journal table
+- [x] Create testimonials table with 3 seeded entries
+- [x] Create pdf_products table with 6 seeded products
+- [x] Create affiliate_clicks table
+- [x] Create admin_settings table
+- [x] Create price_cache table
+- [x] Set up all RLS policies per table requirements
 
 ## Acceptance
 - All 10 tables exist with proper columns and constraints
