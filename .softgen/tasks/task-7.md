@@ -1,6 +1,6 @@
 ---
 title: PWA Setup & Polish
-status: in_progress
+status: done
 priority: medium
 type: chore
 tags: [pwa, polish]
@@ -17,9 +17,9 @@ Add PWA manifest, middleware for auth protection, loading states, error boundari
 - [x] Add PWA meta tags to _document.tsx
 - [x] Create middleware.ts for /app and /admin route protection
 - [x] Middleware checks onboarding_completed and role
-- [ ] Add loading skeletons to data-fetching pages
-- [ ] Wrap major sections in error boundaries
-- [ ] Test mobile responsive across all pages
+- [x] Add loading skeletons to data-fetching pages
+- [x] Wrap major sections in error boundaries
+- [x] Test mobile responsive across all pages
 
 ## Acceptance
 - PWA installs correctly on iOS/Android/Desktop
