@@ -1,156 +1,152 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle } from "lucide-react";
 
-export default function AdminSettings() {
-  const [settings, setSettings] = useState({
-    monthly_price: "9.99",
-    trial_days: "14",
-    app_name: "Bloom",
+export default function Settings() {
+  const [toast, setToast] = useState("");
+  const [pricing, setPricing] = useState({
+    monthlyPrice: "9.99",
+    trialDays: "14"
+  });
+  const [branding, setBranding] = useState({
+    appName: "Bloom",
     tagline: "by Cinder Vault"
   });
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const { data } = await supabase
-        .from("admin_settings")
-        .select("*")
-        .in("key", Object.keys(settings));
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(""), 3000);
+  };
 
-      const settingsMap: any = {};
-      data?.forEach((s) => {
-        settingsMap[s.key] = s.value;
-      });
-      setSettings({ ...settings, ...settingsMap });
-    };
-    fetchSettings();
-  }, []);
+  const handleSavePricing = async () => {
+    try {
+      await supabase.from("admin_settings").upsert([
+        { key: "monthly_price", value: pricing.monthlyPrice, description: "Monthly subscription price" },
+        { key: "trial_days", value: pricing.trialDays, description: "Free trial duration in days" }
+      ]);
+      showToast("Pricing settings saved");
+    } catch (error) {
+      console.error("Save pricing error:", error);
+      showToast("Failed to save pricing");
+    }
+  };
 
-  const saveSetting = async (key: string, value: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    await supabase
-      .from("admin_settings")
-      .upsert({
-        key,
-        value,
-        updated_at: new Date().toISOString(),
-        updated_by: user?.id
-      });
-
-    alert(`${key} saved successfully`);
+  const handleSaveBranding = async () => {
+    try {
+      await supabase.from("admin_settings").upsert([
+        { key: "app_name", value: branding.appName, description: "Application name" },
+        { key: "tagline", value: branding.tagline, description: "Brand tagline" }
+      ]);
+      showToast("Branding settings saved");
+    } catch (error) {
+      console.error("Save branding error:", error);
+      showToast("Failed to save branding");
+    }
   };
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-serif font-semibold text-sage-900">Settings</h1>
-          <p className="text-sage-600 mt-1">Configure pricing, branding, and deployment</p>
+      {toast && (
+        <div className="fixed bottom-4 right-4 bg-sage-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {toast}
         </div>
+      )}
 
-        <div className="bg-white rounded-xl p-6 border border-sage-200">
-          <h3 className="text-lg font-serif font-semibold text-sage-900 mb-4">Subscription Pricing</h3>
-          <div className="grid grid-cols-2 gap-4">
+      <div className="mb-8">
+        <h1 className="font-serif text-4xl text-sage-800 mb-2">Settings</h1>
+        <p className="text-slate-600">Configure platform settings and deployment</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Subscription Pricing */}
+        <div className="bg-white rounded-xl border border-sage-200 p-8">
+          <h2 className="font-serif text-2xl text-sage-800 mb-6">Subscription Pricing</h2>
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-sage-700 mb-1">Monthly Price ($)</label>
-              <Input
-                type="number"
+              <Label className="mb-2 block">Monthly Price ($)</Label>
+              <Input 
+                type="number" 
                 step="0.01"
-                value={settings.monthly_price}
-                onChange={(e) => setSettings({ ...settings, monthly_price: e.target.value })}
+                value={pricing.monthlyPrice}
+                onChange={(e) => setPricing({...pricing, monthlyPrice: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-sage-700 mb-1">Trial Period (days)</label>
-              <Input
+              <Label className="mb-2 block">Trial Period (days)</Label>
+              <Input 
                 type="number"
-                value={settings.trial_days}
-                onChange={(e) => setSettings({ ...settings, trial_days: e.target.value })}
+                value={pricing.trialDays}
+                onChange={(e) => setPricing({...pricing, trialDays: e.target.value})}
               />
             </div>
           </div>
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={() => {
-                saveSetting("monthly_price", settings.monthly_price);
-                saveSetting("trial_days", settings.trial_days);
-              }}
-              className="bg-sage-800 hover:bg-sage-900"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save Pricing
-            </Button>
-          </div>
+          <Button onClick={handleSavePricing} className="bg-sage-800 hover:bg-sage-900 text-white">
+            Save Pricing
+          </Button>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-sage-200">
-          <h3 className="text-lg font-serif font-semibold text-sage-900 mb-4">App Branding</h3>
-          <div className="grid grid-cols-2 gap-4">
+        {/* App Branding */}
+        <div className="bg-white rounded-xl border border-sage-200 p-8">
+          <h2 className="font-serif text-2xl text-sage-800 mb-6">App Branding</h2>
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-sage-700 mb-1">App Name</label>
-              <Input
-                value={settings.app_name}
-                onChange={(e) => setSettings({ ...settings, app_name: e.target.value })}
+              <Label className="mb-2 block">App Name</Label>
+              <Input 
+                value={branding.appName}
+                onChange={(e) => setBranding({...branding, appName: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-sage-700 mb-1">Tagline</label>
-              <Input
-                value={settings.tagline}
-                onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
+              <Label className="mb-2 block">Tagline</Label>
+              <Input 
+                value={branding.tagline}
+                onChange={(e) => setBranding({...branding, tagline: e.target.value})}
               />
             </div>
           </div>
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={() => {
-                saveSetting("app_name", settings.app_name);
-                saveSetting("tagline", settings.tagline);
-              }}
-              className="bg-sage-800 hover:bg-sage-900"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save Branding
-            </Button>
-          </div>
+          <Button onClick={handleSaveBranding} className="bg-sage-800 hover:bg-sage-900 text-white">
+            Save Branding
+          </Button>
         </div>
 
-        <div className="bg-sage-50 rounded-xl p-6 border border-sage-200">
-          <h3 className="text-lg font-serif font-semibold text-sage-900 mb-4">Deployment Information</h3>
-          
+        {/* Deployment Information */}
+        <div className="bg-white rounded-xl border border-sage-200 p-8">
+          <h2 className="font-serif text-2xl text-sage-800 mb-6">Deployment</h2>
           <div className="space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-sage-50 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-sage-600 mt-0.5" />
+              <div>
+                <div className="font-semibold text-sage-900 mb-1">GitHub Repository</div>
+                <p className="text-sm text-slate-600">Connected and syncing automatically</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-sage-50 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-sage-600 mt-0.5" />
+              <div>
+                <div className="font-semibold text-sage-900 mb-1">Vercel Deployment</div>
+                <p className="text-sm text-slate-600">Auto-deploys on push to main branch</p>
+              </div>
+            </div>
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> Environment variables must be configured in Vercel dashboard for production deployment.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Database Panel */}
+        <div className="bg-white rounded-xl border border-sage-200 p-8">
+          <h2 className="font-serif text-2xl text-sage-800 mb-6">Database</h2>
+          <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+            <CheckCircle className="w-6 h-6 text-green-600" />
             <div>
-              <h4 className="text-sm font-medium text-sage-800 mb-2">GitHub Repository</h4>
-              <p className="text-sm text-sage-600 mb-2">
-                Your project is connected to GitHub. Push changes to deploy automatically via Vercel.
-              </p>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-sage-700 hover:text-sage-900"
-              >
-                View on GitHub
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-
-            <div className="border-t border-sage-200 pt-4">
-              <h4 className="text-sm font-medium text-sage-800 mb-2">Vercel Deployment</h4>
-              <p className="text-sm text-sage-600 mb-2">
-                Click the Publish button in Softgen to deploy your app to Vercel with one click.
-              </p>
-            </div>
-
-            <div className="border-t border-sage-200 pt-4">
-              <h4 className="text-sm font-medium text-sage-800 mb-2">Database</h4>
-              <p className="text-sm text-sage-600">
-                Supabase project is connected and ready. Manage tables, RLS policies, and auth settings in the Supabase dashboard.
-              </p>
+              <div className="font-semibold text-green-900 mb-1">Supabase Connected</div>
+              <p className="text-sm text-green-700">Database, Auth, and Storage are operational</p>
             </div>
           </div>
         </div>
