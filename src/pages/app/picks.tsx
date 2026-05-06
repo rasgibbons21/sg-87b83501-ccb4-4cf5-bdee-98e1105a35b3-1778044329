@@ -137,6 +137,30 @@ export default function Picks() {
     return "bg-[#FDEAEA] text-[#C04040] border-[#C04040]";
   };
 
+  const handleCreateAlert = async (alertType: "above" | "below" | "target" | "stop", alertPrice: number) => {
+    if (!userId || !alertModal) return;
+
+    try {
+      await alertService.createAlert(
+        userId,
+        alertModal.ticker,
+        alertModal.name,
+        alertType,
+        alertPrice,
+        alertModal.price
+      );
+      
+      const freshAlerts = await alertService.getUserAlerts(userId);
+      setUserAlerts(freshAlerts);
+      
+      setAlertModal(null);
+      showToast(`Alert set for ${alertModal.ticker} at $${alertPrice.toFixed(2)}`);
+    } catch (error) {
+      console.error("Create alert error:", error);
+      showToast("Failed to create alert");
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
