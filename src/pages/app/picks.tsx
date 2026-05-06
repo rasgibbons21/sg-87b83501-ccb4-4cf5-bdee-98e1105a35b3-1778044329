@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Star } from "lucide-react";
 import { watchlistService } from "@/services/watchlistService";
 
 interface Pick {
@@ -11,6 +12,8 @@ interface Pick {
   name: string;
   type: string;
   price: number;
+  change_pct: number;
+  price_up: boolean;
   signal: string;
   entry_display: string;
   target_display: string;
@@ -34,50 +37,42 @@ export default function Picks() {
   const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
-        
-        // Load watchlist
         const watchlist = await watchlistService.getUserWatchlist(session.user.id);
         setWatchlistItems(new Set(watchlist.map(item => item.ticker)));
       }
+      fetchPicks();
+    };
+    init();
 
-      const { data: picksData } = await supabase
+    const interval = setInterval(fetchPicks, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchPicks = async () => {
+    try {
+      const { data, error } = await supabase
         .from("picks")
         .select("*")
         .eq("is_active", true)
         .order("published_at", { ascending: false });
 
-      if (picksData) {
-        setPicks(picksData);
-      }
+      if (error) throw error;
+      if (data) setPicks(data as Pick[]);
+    } catch (err) {
+      console.error("Error fetching picks:", err);
+    } finally {
       setLoading(false);
-    };
-
-    fetchData();
-
-    const interval = setInterval(async () => {
-      const { data: pricesData } = await fetch("/api/prices").then(r => r.json()).catch(() => ({ data: [] }));
-      if (pricesData && Array.isArray(pricesData)) {
-        setPicks(prev => prev.map(pick => {
-          const priceUpdate = pricesData.find((p: any) => p.ticker === pick.ticker);
-          return priceUpdate ? { ...pick, price: priceUpdate.price, change_pct: priceUpdate.changePct, price_up: priceUpdate.priceUp } : pick;
-        }));
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (filter === "All") {
-      setFilteredPicks(picks);
-    } else {
-      setFilteredPicks(picks.filter(pick => pick.type.toLowerCase() === filter));
     }
-  }, [filter, picks]);
+  };
+
+  const filteredPicks = picks.filter(pick => {
+    if (filter === "All") return true;
+    return pick.type.toLowerCase() === filter.toLowerCase();
+  });
 
   const toggleWatchlist = async (pick: Pick) => {
     if (!userId) {
@@ -87,7 +82,6 @@ export default function Picks() {
 
     try {
       const isInWatchlist = watchlistItems.has(pick.ticker);
-      
       if (isInWatchlist) {
         await watchlistService.removeFromWatchlist(userId, pick.ticker);
         setWatchlistItems(prev => {
@@ -112,17 +106,11 @@ export default function Picks() {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const filteredPicks = picks.filter(pick => {
-    if (filter === "All") return true;
-    return pick.type.toLowerCase() === filter.toLowerCase();
-  });
-
   const handleBuyClick = async (pick: Pick) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (userId) {
         await supabase.from("affiliate_clicks").insert({
-          user_id: user.id,
+          user_id: userId,
           broker_name: "General",
           product_name: pick.ticker,
           click_type: "broker",
@@ -137,8 +125,9 @@ export default function Picks() {
   };
 
   const getSignalColor = (signal: string) => {
-    if (signal === "buy") return "bg-[#E8F5EE] text-[#2D7A4A] border-[#2D7A4A]";
-    if (signal === "hold") return "bg-[#FEF3DC] text-[#C4921A] border-[#C4921A]";
+    const s = signal?.toLowerCase() || "wait";
+    if (s === "buy") return "bg-[#E8F5EE] text-[#2D7A4A] border-[#2D7A4A]";
+    if (s === "hold") return "bg-[#FEF3DC] text-[#C4921A] border-[#C4921A]";
     return "bg-[#FDEAEA] text-[#C04040] border-[#C04040]";
   };
 
@@ -163,10 +152,11 @@ export default function Picks() {
   return (
     <AppLayout>
       {toastMessage && (
-        <div className="fixed bottom-4 right-4 bg-sage-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed bottom-4 right-4 bg-sage-800 text-white px-6 py-3 rounded-lg shadow-lg z-[200]">
           {toastMessage}
         </div>
       )}
+
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="font-serif text-3xl text-sage-800 mb-2">Investment Picks</h1>
@@ -202,23 +192,25 @@ export default function Picks() {
                     <h3 className="font-mono text-lg font-bold text-sage-800">{pick.ticker}</h3>
                     <p className="text-sm text-slate-600 mt-1">{pick.name}</p>
                   </div>
-                  <Badge className="bg-sage-100 text-sage-700 border-sage-300 font-medium">
-                    {pick.type.toUpperCase()}
-                  </Badge>
-                  <button
-                    onClick={() => toggleWatchlist(pick)}
-                    className="p-2 hover:bg-sage-50 rounded-lg transition-colors"
-                    title={watchlistItems.has(pick.ticker) ? "Remove from watchlist" : "Add to watchlist"}
-                  >
-                    <Star 
-                      className={`w-5 h-5 ${watchlistItems.has(pick.ticker) ? 'fill-champagne-400 text-champagne-400' : 'text-slate-400'}`}
-                    />
-                  </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge className="bg-sage-100 text-sage-700 border-sage-300 font-medium">
+                      {pick.type.toUpperCase()}
+                    </Badge>
+                    <button
+                      onClick={() => toggleWatchlist(pick)}
+                      className="p-1.5 hover:bg-sage-50 rounded-md transition-colors"
+                      title={watchlistItems.has(pick.ticker) ? "Remove from watchlist" : "Add to watchlist"}
+                    >
+                      <Star 
+                        className={`w-5 h-5 ${watchlistItems.has(pick.ticker) ? 'fill-champagne-400 text-champagne-400' : 'text-slate-400'}`}
+                      />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Price */}
                 <div className="border-t border-sage-100 pt-4">
-                  <div className="font-mono text-2xl text-slate-900">${pick.price.toFixed(2)}</div>
+                  <div className="font-mono text-2xl text-slate-900">${pick.price?.toFixed(2) || "0.00"}</div>
                 </div>
 
                 {/* Compounding Box */}
@@ -252,15 +244,15 @@ export default function Picks() {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-[#E8F5EE] rounded-lg p-3 text-center">
                     <div className="text-xs text-[#2D7A4A] font-semibold mb-1">Entry</div>
-                    <div className="font-mono text-sm text-[#2D7A4A]">{pick.entry_display}</div>
+                    <div className="font-mono text-sm text-[#2D7A4A]">{pick.entry_display || "$0"}</div>
                   </div>
                   <div className="bg-[#FEF3DC] rounded-lg p-3 text-center">
                     <div className="text-xs text-[#C4921A] font-semibold mb-1">Target</div>
-                    <div className="font-mono text-sm text-[#C4921A]">{pick.target_display}</div>
+                    <div className="font-mono text-sm text-[#C4921A]">{pick.target_display || "$0"}</div>
                   </div>
                   <div className="bg-[#FDEAEA] rounded-lg p-3 text-center">
                     <div className="text-xs text-[#C04040] font-semibold mb-1">Stop</div>
-                    <div className="font-mono text-sm text-[#C04040]">{pick.stop_display}</div>
+                    <div className="font-mono text-sm text-[#C04040]">{pick.stop_display || "$0"}</div>
                   </div>
                 </div>
 
@@ -274,7 +266,7 @@ export default function Picks() {
                 {/* Signal Badge */}
                 <div className="flex items-center justify-between">
                   <Badge className={`${getSignalColor(pick.signal)} border font-semibold uppercase tracking-wide`}>
-                    {pick.signal}
+                    {pick.signal || "WAIT"}
                   </Badge>
                 </div>
 
