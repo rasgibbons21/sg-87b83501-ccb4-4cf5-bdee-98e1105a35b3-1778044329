@@ -1,13 +1,14 @@
-import { AppLayout } from "@/components/app/AppLayout";
-import { Button } from "@/components/ui/button";
-import { Copy, Smartphone, Monitor } from "lucide-react";
 import { useState } from "react";
+import { AppLayout } from "@/components/app/AppLayout";
+import { Copy, Check, Smartphone, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function GetApp() {
   const [copied, setCopied] = useState(false);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bloom.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bloom-app.vercel.app";
+  const qrUrl = `/api/qr?url=${encodeURIComponent(appUrl)}&size=180`;
 
-  const copyLink = () => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(appUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -15,144 +16,96 @@ export default function GetApp() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-serif text-sage-900 mb-2">Install Bloom on Your Device</h1>
-          <p className="text-sage-600">Access Bloom like a native app from any device.</p>
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="font-serif text-4xl text-sage-800 mb-2">Get the Bloom App</h1>
+          <p className="text-slate-600">Install Bloom on all your devices for quick access</p>
         </div>
 
-        <div className="bg-white border border-sage-200 rounded-xl p-8 text-center">
-          <div className="inline-block mb-6">
-            <img
-              src={`/api/qr?url=${encodeURIComponent(appUrl)}&size=180`}
-              alt="QR code for Bloom app"
-              className="w-[180px] h-[180px] border-4 border-sage-200 rounded-xl"
-            />
-          </div>
-          
-          <h3 className="text-xl font-serif text-sage-900 mb-2">Scan to Open on Mobile</h3>
-          <p className="text-sage-600 mb-4">Use your phone's camera to scan this QR code</p>
-
-          <div className="flex items-center gap-2 max-w-md mx-auto">
-            <input
-              type="text"
-              value={appUrl}
-              readOnly
-              className="flex-1 px-4 py-2 border border-sage-200 rounded-lg bg-sage-50 text-sage-900 font-mono text-sm"
-            />
-            <Button
-              onClick={copyLink}
-              variant="outline"
-              className="border-sage-300"
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              {copied ? "Copied!" : "Copy"}
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          <div className="bg-white rounded-xl border border-sage-200 p-8 text-center">
+            <div className="mb-6">
+              <img src={qrUrl} alt="QR Code" className="mx-auto w-[180px] h-[180px] border-4 border-sage-100 rounded-xl" />
+            </div>
+            <h2 className="font-serif text-2xl text-sage-800 mb-2">Scan to Open</h2>
+            <p className="text-slate-600 mb-6">Point your phone camera at this QR code to open Bloom instantly</p>
+            <div className="bg-sage-50 rounded-lg p-3 mb-4">
+              <code className="text-sm text-sage-800 break-all">{appUrl}</code>
+            </div>
+            <Button onClick={handleCopy} variant="outline" className="w-full">
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </>
+              )}
             </Button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white border border-sage-200 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-sage-100 rounded-full flex items-center justify-center">
-                <Smartphone className="w-5 h-5 text-sage-700" />
-              </div>
-              <h3 className="font-medium text-sage-900">Mobile Installation</h3>
-            </div>
-
-            <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-sage-200 p-8">
+            <h2 className="font-serif text-2xl text-sage-800 mb-6">Install Instructions</h2>
+            
+            <div className="space-y-6">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🍎</span>
-                  <span className="font-medium text-sage-900 text-sm">iPhone / iPad</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <Smartphone className="w-6 h-6 text-sage-600" />
+                  <h3 className="font-semibold text-sage-800">iPhone (Safari)</h3>
                 </div>
-                <ol className="text-sm text-sage-700 space-y-1 ml-6 list-decimal">
-                  <li>Open {appUrl} in Safari</li>
-                  <li>Tap the Share button (square with arrow)</li>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 pl-9">
+                  <li>Open Bloom in Safari</li>
+                  <li>Tap the Share button (box with arrow)</li>
                   <li>Scroll down and tap "Add to Home Screen"</li>
                   <li>Tap "Add" in the top right</li>
                 </ol>
               </div>
 
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🤖</span>
-                  <span className="font-medium text-sage-900 text-sm">Android</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <Smartphone className="w-6 h-6 text-sage-600" />
+                  <h3 className="font-semibold text-sage-800">Android (Chrome)</h3>
                 </div>
-                <ol className="text-sm text-sage-700 space-y-1 ml-6 list-decimal">
-                  <li>Open {appUrl} in Chrome</li>
-                  <li>Tap the three dots menu (⋮)</li>
-                  <li>Tap "Install app" or "Add to Home screen"</li>
-                  <li>Tap "Install" to confirm</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-sage-200 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-sage-100 rounded-full flex items-center justify-center">
-                <Monitor className="w-5 h-5 text-sage-700" />
-              </div>
-              <h3 className="font-medium text-sage-900">Desktop Installation</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🍎</span>
-                  <span className="font-medium text-sage-900 text-sm">Mac (Safari)</span>
-                </div>
-                <ol className="text-sm text-sage-700 space-y-1 ml-6 list-decimal">
-                  <li>Open {appUrl} in Safari</li>
-                  <li>Click File → Add to Dock</li>
-                  <li>The app icon will appear in your Dock</li>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 pl-9">
+                  <li>Open Bloom in Chrome</li>
+                  <li>Tap the three dots menu (top right)</li>
+                  <li>Tap "Add to Home screen"</li>
+                  <li>Tap "Add" to confirm</li>
                 </ol>
               </div>
 
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">💻</span>
-                  <span className="font-medium text-sage-900 text-sm">Windows / Mac (Chrome)</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <Monitor className="w-6 h-6 text-sage-600" />
+                  <h3 className="font-semibold text-sage-800">Desktop (Chrome/Edge)</h3>
                 </div>
-                <ol className="text-sm text-sage-700 space-y-1 ml-6 list-decimal">
-                  <li>Open {appUrl} in Chrome</li>
-                  <li>Click the install icon (⊕) in the address bar</li>
-                  <li>Or click the three dots → Install Bloom</li>
-                  <li>Click "Install" to add to your desktop</li>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 pl-9">
+                  <li>Open Bloom in your browser</li>
+                  <li>Click the install icon in the address bar</li>
+                  <li>Click "Install" to confirm</li>
+                  <li>Bloom will open in its own window</li>
                 </ol>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-champagne-50 border border-champagne-200 rounded-xl p-6">
-          <h3 className="font-medium text-sage-900 mb-2">📱 Why Install?</h3>
-          <ul className="text-sm text-sage-700 space-y-1">
-            <li>• Access Bloom with one tap from your home screen</li>
-            <li>• Works offline for viewing your portfolio and guides</li>
-            <li>• Faster load times and smoother experience</li>
-            <li>• Receive push notifications for market updates (coming soon)</li>
-          </ul>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white border border-sage-200 rounded-lg p-4 text-center">
-            <span className="text-2xl mb-2 block">🍎</span>
-            <span className="text-xs text-sage-700 font-medium">iOS</span>
-          </div>
-          <div className="bg-white border border-sage-200 rounded-lg p-4 text-center">
-            <span className="text-2xl mb-2 block">🤖</span>
-            <span className="text-xs text-sage-700 font-medium">Android</span>
-          </div>
-          <div className="bg-white border border-sage-200 rounded-lg p-4 text-center">
-            <span className="text-2xl mb-2 block">🍎</span>
-            <span className="text-xs text-sage-700 font-medium">Mac</span>
-          </div>
-          <div className="bg-white border border-sage-200 rounded-lg p-4 text-center">
-            <span className="text-2xl mb-2 block">💻</span>
-            <span className="text-xs text-sage-700 font-medium">Windows</span>
-          </div>
+          {[
+            { name: "iOS", emoji: "📱" },
+            { name: "Android", emoji: "🤖" },
+            { name: "Mac", emoji: "💻" },
+            { name: "Windows", emoji: "🖥️" }
+          ].map((platform) => (
+            <div key={platform.name} className="bg-white rounded-xl border border-sage-200 p-6 text-center">
+              <div className="text-4xl mb-3">{platform.emoji}</div>
+              <div className="font-medium text-sage-800">{platform.name}</div>
+              <div className="text-xs text-slate-500 mt-1">Supported</div>
+            </div>
+          ))}
         </div>
       </div>
     </AppLayout>

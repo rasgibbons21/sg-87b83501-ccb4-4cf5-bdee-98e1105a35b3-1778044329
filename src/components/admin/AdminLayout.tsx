@@ -1,113 +1,108 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { CrawlerTicker } from "@/components/CrawlerTicker";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileEdit, DollarSign, Key, FileText, Settings, LogOut } from "lucide-react";
+import { CrawlerTicker } from "@/components/CrawlerTicker";
+import { LogOut, BarChart3, Users, Edit3, DollarSign, Key, FileText, Settings } from "lucide-react";
 
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        setProfile(data);
-      }
-    };
-    fetchProfile();
+    checkAdmin();
   }, []);
+
+  const checkAdmin = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push("/");
+      return;
+    }
+    const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+    if (data?.role !== "admin") {
+      router.push("/app/dashboard");
+      return;
+    }
+    setProfile(data);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
   };
 
-  const navItems = [
-    { href: "/admin", label: "Overview", icon: LayoutDashboard },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/picks", label: "Picks Editor", icon: FileEdit },
-    { href: "/admin/affiliates", label: "Affiliates", icon: DollarSign },
-    { href: "/admin/apikeys", label: "API Keys", icon: Key },
-    { href: "/admin/pdfs", label: "PDF Products", icon: FileText },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+  const navLinks = [
+    { name: "Overview", href: "/admin", icon: BarChart3 },
+    { name: "Users & Revenue", href: "/admin/users", icon: Users },
+    { name: "Picks Editor", href: "/admin/picks", icon: Edit3 },
+    { name: "Broker Affiliates", href: "/admin/affiliates", icon: DollarSign },
+    { name: "API Keys", href: "/admin/apikeys", icon: Key },
+    { name: "PDF Products", href: "/admin/pdfs", icon: FileText },
+    { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-ivory">
+    <div className="min-h-screen bg-ivory flex flex-col">
       <CrawlerTicker />
       
-      <header className="border-b border-sage-200 bg-white/80 backdrop-blur-sm sticky top-[34px] z-40">
+      <header className="border-b border-sage-200 bg-white sticky top-[34px] z-40">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/admin" className="flex items-center gap-3">
-              <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-sage-600 to-sage-800 flex items-center justify-center">
-                <span className="text-xl">🌿</span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sage-600 to-sage-800 flex items-center justify-center">
+                <span className="text-sm">🌿</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sage-800 font-serif text-2xl font-semibold leading-none">Bloom Admin</span>
-                <span className="text-[9px] uppercase tracking-widest text-sage-400 leading-none mt-0.5">by Cinder Vault</span>
+              <div>
+                <span className="text-sage-800 font-serif text-xl font-semibold leading-none">Bloom</span>
+                <span className="text-xs text-slate-400 ml-2 uppercase tracking-wider">Admin</span>
               </div>
             </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 rounded-full">
-                <div className="w-7 h-7 rounded-full bg-sage-800 flex items-center justify-center text-white text-xs font-medium">
-                  {profile?.full_name?.charAt(0).toUpperCase() || "A"}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-sage-50 px-3 py-1.5 rounded-full border border-sage-100">
+                <div className="w-6 h-6 rounded-full bg-sage-200 flex items-center justify-center text-sage-800 text-xs font-medium">
+                  {profile?.full_name?.charAt(0) || "A"}
                 </div>
-                <span className="text-sm text-sage-800 font-medium">{profile?.full_name || "Admin"}</span>
+                <span className="text-sm font-medium text-sage-900 hidden sm:block">
+                  {profile?.full_name?.split(" ")[0]}
+                </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSignOut}
-                className="text-sage-700 hover:text-sage-900"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+              <button onClick={handleSignOut} className="text-sage-500 hover:text-terracotta-600 transition-colors">
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8 max-w-[1400px]">
-        <div className="grid grid-cols-[210px_1fr] gap-8">
-          <aside className="sticky top-[130px] h-fit">
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = router.pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-sage-800 text-white"
-                        : "text-sage-700 hover:bg-sage-50 hover:text-sage-900"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </aside>
+      <div className="flex-1 flex">
+        <aside className="w-64 bg-white border-r border-sage-200 sticky top-[98px] h-[calc(100vh-98px)] overflow-y-auto">
+          <nav className="p-4 space-y-1">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = router.pathname === link.href || (link.href !== "/admin" && router.pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+                    isActive ? "bg-sage-100 text-sage-900 font-medium" : "text-slate-600 hover:bg-sage-50 hover:text-sage-900"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm">{link.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
 
-          <main>{children}</main>
-        </div>
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
