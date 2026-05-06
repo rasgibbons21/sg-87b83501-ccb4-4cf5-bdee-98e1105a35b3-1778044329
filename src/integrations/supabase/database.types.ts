@@ -284,6 +284,59 @@ export type Database = {
           },
         ]
       }
+      price_alerts: {
+        Row: {
+          alert_price: number
+          alert_type: string
+          created_at: string | null
+          current_price: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notified: boolean | null
+          ticker: string
+          triggered_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_price: number
+          alert_type: string
+          created_at?: string | null
+          current_price?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notified?: boolean | null
+          ticker: string
+          triggered_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_price?: number
+          alert_type?: string
+          created_at?: string | null
+          current_price?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notified?: boolean | null
+          ticker?: string
+          triggered_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_cache: {
         Row: {
           cached_at: string | null

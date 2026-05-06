@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { TrendingUp, AlertCircle, Star, Bell } from "lucide-react";
+import { watchlistService } from "@/services/watchlistService";
+import { alertService } from "@/services/alertService";
+import { AlertModal } from "@/components/app/AlertModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
-import { watchlistService } from "@/services/watchlistService";
 
 interface Pick {
   id: string;
@@ -35,6 +37,8 @@ export default function Picks() {
   const [userId, setUserId] = useState<string>("");
   const [watchlistItems, setWatchlistItems] = useState<Set<string>>(new Set());
   const [toastMessage, setToastMessage] = useState("");
+  const [alertModal, setAlertModal] = useState<{ ticker: string; name: string; price: number } | null>(null);
+  const [userAlerts, setUserAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -43,6 +47,8 @@ export default function Picks() {
         setUserId(session.user.id);
         const watchlist = await watchlistService.getUserWatchlist(session.user.id);
         setWatchlistItems(new Set(watchlist.map(item => item.ticker)));
+        const alerts = await alertService.getUserAlerts(session.user.id);
+        setUserAlerts(alerts);
       }
       fetchPicks();
     };
@@ -196,15 +202,24 @@ export default function Picks() {
                     <Badge className="bg-sage-100 text-sage-700 border-sage-300 font-medium">
                       {pick.type.toUpperCase()}
                     </Badge>
-                    <button
-                      onClick={() => toggleWatchlist(pick)}
-                      className="p-1.5 hover:bg-sage-50 rounded-md transition-colors"
-                      title={watchlistItems.has(pick.ticker) ? "Remove from watchlist" : "Add to watchlist"}
-                    >
-                      <Star 
-                        className={`w-5 h-5 ${watchlistItems.has(pick.ticker) ? 'fill-champagne-400 text-champagne-400' : 'text-slate-400'}`}
-                      />
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setAlertModal({ ticker: pick.ticker, name: pick.name, price: pick.price })}
+                        className="p-2 hover:bg-sage-50 rounded-lg transition-colors"
+                        title="Set price alert"
+                      >
+                        <Bell className={`w-5 h-5 ${userAlerts.some(a => a.ticker === pick.ticker) ? 'text-champagne-500 fill-champagne-400' : 'text-slate-400'}`} />
+                      </button>
+                      <button
+                        onClick={() => toggleWatchlist(pick)}
+                        className="p-2 hover:bg-sage-50 rounded-lg transition-colors"
+                        title={watchlistItems.has(pick.ticker) ? "Remove from watchlist" : "Add to watchlist"}
+                      >
+                        <Star 
+                          className={`w-5 h-5 ${watchlistItems.has(pick.ticker) ? 'fill-champagne-400 text-champagne-400' : 'text-slate-400'}`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -311,6 +326,16 @@ export default function Picks() {
           </div>
         )}
       </div>
+
+      {alertModal && (
+        <AlertModal
+          ticker={alertModal.ticker}
+          name={alertModal.name}
+          currentPrice={alertModal.price}
+          onClose={() => setAlertModal(null)}
+          onCreateAlert={handleCreateAlert}
+        />
+      )}
     </AppLayout>
   );
 }

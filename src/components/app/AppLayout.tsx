@@ -36,6 +36,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     { name: "Dashboard", href: "/app/dashboard" },
     { name: "Picks", href: "/app/picks" },
     { name: "Watchlist", href: "/app/watchlist" },
+    { name: "Alerts", href: "/app/alerts" },
     { name: "Budget", href: "/app/budget" },
     { name: "College Fund", href: "/app/college" },
     { name: "Brokers", href: "/app/brokers" },
