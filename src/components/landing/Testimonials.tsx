@@ -1,77 +1,89 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Testimonial {
-  id: string;
-  display_name: string;
-  location: string;
-  situation: string;
-  quote: string;
-  started_with: string;
-  result: string;
-  avatar_emoji: string;
-}
-
 export function Testimonials() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      const { data, error } = await supabase
-        .from("testimonials")
-        .select("*")
-        .eq("is_active", true)
-        .eq("is_featured", true)
-        .order("sort_order", { ascending: true })
-        .limit(3);
-
-      if (data) setTestimonials(data);
-      if (error) console.error("Error fetching testimonials:", error);
-    };
-
-    fetchTestimonials();
-  }, []);
+  const testimonials = [
+    {
+      name: "Sarah M.",
+      location: "Atlanta, GA",
+      situation: "Single mom",
+      quote: "I started with $75/month in VTI and SCHD. Four months later my account shows $387.",
+      result: "+18.4% in 4 months",
+      emoji: "👩‍💼"
+    },
+    {
+      name: "Priya K.",
+      location: "Austin, TX",
+      situation: "Stay-at-home mom",
+      quote: "Bloom explained everything without making me feel dumb. Now I manage my own $200/month portfolio.",
+      result: "Portfolio up $1,840",
+      emoji: "👩‍🏫"
+    },
+    {
+      name: "Maria C.",
+      location: "Miami, FL",
+      situation: "Nurse",
+      quote: "I thought I needed thousands. $50/month in QQQ and VTI was enough.",
+      result: "$412 after 6 months",
+      emoji: "👩‍⚕️"
+    }
+  ];
 
   return (
-    <section id="stories" className="py-20 bg-ivory">
-      <div className="container mx-auto px-6">
+    <section id="stories" className="py-20 bg-[#FAF7F2]">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-sage-900 mb-4">
-            Real women. Real results.
+          <div className="inline-flex items-center gap-2 mb-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#C4714A]" />
+            <span className="text-[#C4714A] text-sm font-medium uppercase tracking-wider">
+              Real Stories
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-serif text-[#2D4A3E] mb-4">
+            Women building wealth, $50 at a time
           </h2>
-          <p className="text-lg text-sage-600 max-w-2xl mx-auto">
-            From single moms to stay-at-home moms, these are the women who started with doubt and ended with portfolios.
-          </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {testimonials.map((testimonial) => (
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((testimonial, index) => (
             <div
-              key={testimonial.id}
-              className="bg-white rounded-xl p-8 border-l-4 border-gradient-to-b from-sage-600 to-champagne-400 shadow-lg hover:shadow-xl transition-shadow"
+              key={index}
+              className="bg-white rounded-lg p-6 relative overflow-hidden group hover:shadow-lg transition-shadow"
             >
-              <div className="text-6xl text-sage-200 font-serif leading-none mb-4">"</div>
-              <p className="text-sage-700 italic mb-6 leading-relaxed">
-                {testimonial.quote}
-              </p>
+              {/* Left border gradient */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#2D4A3E] via-[#5E9478] to-[#D4AF6A]" />
               
-              <div className="flex items-start gap-4 pt-6 border-t border-sage-100">
-                <div className="text-4xl">{testimonial.avatar_emoji}</div>
-                <div className="flex-1">
-                  <div className="font-semibold text-sage-900">{testimonial.display_name}</div>
-                  <div className="text-sm text-sage-600 mb-2">{testimonial.location}</div>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="text-xs px-2 py-1 bg-sage-100 text-sage-700 rounded">
-                      {testimonial.situation}
-                    </span>
-                    <span className="text-xs px-2 py-1 bg-champagne-100 text-champagne-700 rounded">
-                      Started with {testimonial.started_with}
-                    </span>
+              <div className="pl-4">
+                {/* Opening quote mark */}
+                <div className="text-6xl font-serif text-[#A8C9B5] leading-none mb-3">
+                  "
+                </div>
+
+                {/* Quote text */}
+                <p className="text-slate-700 italic text-base leading-relaxed mb-6">
+                  {testimonial.quote}
+                </p>
+
+                {/* Member info */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">{testimonial.emoji}</div>
+                    <div>
+                      <div className="font-semibold text-[#2D4A3E]">
+                        {testimonial.name}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {testimonial.location}
+                      </div>
+                      <div className="inline-block mt-1 px-2 py-0.5 bg-[#E8F2ED] text-[#2D4A3E] text-xs rounded-full">
+                        {testimonial.situation}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold text-signal-buy bg-signal-buy-bg px-3 py-2 rounded inline-block">
-                    {testimonial.result}
+
+                  {/* Result badge */}
+                  <div className="shrink-0 px-3 py-1.5 bg-[#E8F5EE] border border-[#2D7A4A]/20 rounded-lg">
+                    <div className="text-xs text-slate-600 mb-0.5">Result</div>
+                    <div className="text-sm font-semibold text-[#2D7A4A]">
+                      {testimonial.result}
+                    </div>
                   </div>
                 </div>
               </div>
