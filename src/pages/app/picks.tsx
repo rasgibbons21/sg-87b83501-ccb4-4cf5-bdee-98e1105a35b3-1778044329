@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { watchlistService } from "@/services/watchlistService";
 
 interface Pick {
   id: string;
@@ -28,28 +29,87 @@ export default function Picks() {
   const [picks, setPicks] = useState<Pick[]>([]);
   const [filter, setFilter] = useState<string>("All");
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string>("");
+  const [watchlistItems, setWatchlistItems] = useState<Set<string>>(new Set());
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
-    fetchPicks();
-    const interval = setInterval(fetchPicks, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    const fetchData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        
+        // Load watchlist
+        const watchlist = await watchlistService.getUserWatchlist(session.user.id);
+        setWatchlistItems(new Set(watchlist.map(item => item.ticker)));
+      }
 
-  const fetchPicks = async () => {
-    try {
-      const { data, error } = await supabase
+      const { data: picksData } = await supabase
         .from("picks")
         .select("*")
         .eq("is_active", true)
         .order("published_at", { ascending: false });
 
-      if (error) throw error;
-      if (data) setPicks(data);
-    } catch (err) {
-      console.error("Error fetching picks:", err);
-    } finally {
+      if (picksData) {
+        setPicks(picksData);
+      }
       setLoading(false);
+    };
+
+    fetchData();
+
+    const interval = setInterval(async () => {
+      const { data: pricesData } = await fetch("/api/prices").then(r => r.json()).catch(() => ({ data: [] }));
+      if (pricesData && Array.isArray(pricesData)) {
+        setPicks(prev => prev.map(pick => {
+          const priceUpdate = pricesData.find((p: any) => p.ticker === pick.ticker);
+          return priceUpdate ? { ...pick, price: priceUpdate.price, change_pct: priceUpdate.changePct, price_up: priceUpdate.priceUp } : pick;
+        }));
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (filter === "All") {
+      setFilteredPicks(picks);
+    } else {
+      setFilteredPicks(picks.filter(pick => pick.type.toLowerCase() === filter));
     }
+  }, [filter, picks]);
+
+  const toggleWatchlist = async (pick: Pick) => {
+    if (!userId) {
+      showToast("Please sign in to use watchlist");
+      return;
+    }
+
+    try {
+      const isInWatchlist = watchlistItems.has(pick.ticker);
+      
+      if (isInWatchlist) {
+        await watchlistService.removeFromWatchlist(userId, pick.ticker);
+        setWatchlistItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(pick.ticker);
+          return newSet;
+        });
+        showToast(`${pick.ticker} removed from watchlist`);
+      } else {
+        await watchlistService.addToWatchlist(userId, pick.ticker, pick.name, pick.type);
+        setWatchlistItems(prev => new Set(prev).add(pick.ticker));
+        showToast(`${pick.ticker} added to watchlist`);
+      }
+    } catch (error) {
+      console.error("Watchlist error:", error);
+      showToast("Failed to update watchlist");
+    }
+  };
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 3000);
   };
 
   const filteredPicks = picks.filter(pick => {
@@ -102,6 +162,11 @@ export default function Picks() {
 
   return (
     <AppLayout>
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-sage-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {toastMessage}
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="font-serif text-3xl text-sage-800 mb-2">Investment Picks</h1>
@@ -140,6 +205,15 @@ export default function Picks() {
                   <Badge className="bg-sage-100 text-sage-700 border-sage-300 font-medium">
                     {pick.type.toUpperCase()}
                   </Badge>
+                  <button
+                    onClick={() => toggleWatchlist(pick)}
+                    className="p-2 hover:bg-sage-50 rounded-lg transition-colors"
+                    title={watchlistItems.has(pick.ticker) ? "Remove from watchlist" : "Add to watchlist"}
+                  >
+                    <Star 
+                      className={`w-5 h-5 ${watchlistItems.has(pick.ticker) ? 'fill-champagne-400 text-champagne-400' : 'text-slate-400'}`}
+                    />
+                  </button>
                 </div>
 
                 {/* Price */}

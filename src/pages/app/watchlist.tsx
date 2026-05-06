@@ -1,187 +1,239 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Newspaper } from "lucide-react";
+import { watchlistService } from "@/services/watchlistService";
+import { Trash2, TrendingUp, TrendingDown } from "lucide-react";
 
-export default function Watchlist() {
-  const [watchlist, setWatchlist] = useState<any[]>([]);
-  const [tab, setTab] = useState<string>("etf");
-  const [news, setNews] = useState<any[]>([]);
+interface WatchlistItem {
+  id: string;
+  ticker: string;
+  name: string;
+  type: string;
+  notes: string | null;
+  added_at: string;
+  price?: number;
+  change_pct?: number;
+  price_up?: boolean;
+  signal?: string;
+}
+
+export default function WatchlistPage() {
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [userId, setUserId] = useState<string>("");
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
-    loadWatchlist();
-    loadNews();
-  }, [tab]);
+    const fetchData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        window.location.href = "/";
+        return;
+      }
 
-  const loadWatchlist = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+      setUserId(session.user.id);
+      await loadWatchlist(session.user.id);
+    };
 
-    let query = supabase.from("watchlist").select("*").eq("user_id", session.user.id);
-    
-    if (tab !== "all") {
-      query = query.eq("type", tab);
+    fetchData();
+
+    // Update prices every 60 seconds
+    const interval = setInterval(updatePrices, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadWatchlist = async (uid: string) => {
+    try {
+      const data = await watchlistService.getUserWatchlist(uid);
+      
+      // Fetch live prices
+      const pricesResponse = await fetch("/api/prices").then(r => r.json()).catch(() => ({ data: [] }));
+      const prices = pricesResponse.data || pricesResponse || [];
+
+      // Fetch pick signals
+      const { data: picksData } = await supabase
+        .from("picks")
+        .select("ticker, signal")
+        .in("ticker", data.map(item => item.ticker));
+
+      const enrichedData = data.map(item => {
+        const priceData = prices.find((p: any) => p.ticker === item.ticker);
+        const pickData = picksData?.find((p: any) => p.ticker === item.ticker);
+        
+        return {
+          ...item,
+          price: priceData?.price,
+          change_pct: priceData?.changePct,
+          price_up: priceData?.priceUp,
+          signal: pickData?.signal
+        };
+      });
+
+      setWatchlist(enrichedData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to load watchlist:", error);
+      setLoading(false);
     }
-
-    const { data } = await query.order("added_at", { ascending: false });
-    setWatchlist(data || []);
   };
 
-  const loadNews = async () => {
-    // Mock news data - in production would call /api/news
-    setNews([
-      { headline: "Market opens steady amid economic data", sentiment: "positive", source: "MarketWatch", datetime: "2 hours ago" },
-      { headline: "Tech sector shows resilience", sentiment: "positive", source: "Bloomberg", datetime: "4 hours ago" },
-      { headline: "Fed signals cautious approach", sentiment: "neutral", source: "Reuters", datetime: "6 hours ago" }
-    ]);
+  const updatePrices = async () => {
+    try {
+      const pricesResponse = await fetch("/api/prices").then(r => r.json()).catch(() => ({ data: [] }));
+      const prices = pricesResponse.data || pricesResponse || [];
+
+      setWatchlist(prev => prev.map(item => {
+        const priceData = prices.find((p: any) => p.ticker === item.ticker);
+        return priceData ? { ...item, price: priceData.price, change_pct: priceData.changePct, price_up: priceData.priceUp } : item;
+      }));
+    } catch (error) {
+      console.error("Failed to update prices:", error);
+    }
   };
 
-  const removeFromWatchlist = async (id: string) => {
-    await supabase.from("watchlist").delete().eq("id", id);
-    loadWatchlist();
+  const removeFromWatchlist = async (ticker: string) => {
+    try {
+      await watchlistService.removeFromWatchlist(userId, ticker);
+      setWatchlist(prev => prev.filter(item => item.ticker !== ticker));
+      showToast(`${ticker} removed from watchlist`);
+    } catch (error) {
+      console.error("Failed to remove from watchlist:", error);
+      showToast("Failed to remove item");
+    }
   };
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 3000);
+  };
+
+  const getSignalColor = (signal?: string) => {
+    switch(signal?.toLowerCase()) {
+      case "buy": return "bg-[#E8F5EE] text-[#2D7A4A] border-[#2D7A4A]";
+      case "hold": return "bg-[#FEF3DC] text-[#C4921A] border-[#C4921A]";
+      case "wait": return "bg-[#FDEAEA] text-[#C04040] border-[#C04040]";
+      default: return "bg-slate-100 text-slate-600 border-slate-300";
+    }
+  };
+
+  const filteredWatchlist = filter === "all" 
+    ? watchlist 
+    : watchlist.filter(item => item.type.toLowerCase() === filter);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8">
+            <div className="h-8 w-48 bg-slate-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-64 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-24 bg-slate-200 rounded-xl animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-serif text-sage-900 mb-2">Your Watchlist</h1>
-            <p className="text-sage-600">Track stocks and ETFs you're interested in.</p>
-          </div>
-          <Button className="bg-sage-800 hover:bg-sage-900 text-white">
-            <Plus className="w-4 h-4 mr-2" /> Add Symbol
-          </Button>
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-sage-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {toastMessage}
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="font-serif text-3xl text-sage-800 mb-2">My Watchlist</h1>
+          <p className="text-slate-600">Track your favorite picks with live prices and signals.</p>
         </div>
 
-        <div className="flex gap-2">
-          {["etf", "stock", "college"].map(t => (
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {["all", "etf", "stock", "bond"].map(f => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t 
-                  ? "bg-sage-800 text-white" 
-                  : "bg-white text-sage-700 border border-sage-200 hover:border-sage-400"
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                filter === f
+                  ? "bg-sage-800 text-white"
+                  : "bg-white text-slate-600 hover:bg-sage-50 border border-sage-200"
               }`}
             >
-              {t === "etf" ? "ETFs" : t === "stock" ? "Stocks" : "College Fund"}
+              {f === "all" ? "All" : f.toUpperCase()}s
             </button>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-3">
-            {watchlist.length === 0 ? (
-              <div className="bg-white border border-sage-200 rounded-xl p-12 text-center">
-                <div className="w-16 h-16 bg-sage-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <TrendingUp className="w-8 h-8 text-sage-600" />
-                </div>
-                <h3 className="text-xl font-serif text-sage-900 mb-2">Your watchlist is empty</h3>
-                <p className="text-sage-600 mb-4">Add stocks and ETFs you want to track.</p>
-                <Button className="bg-sage-800 hover:bg-sage-900 text-white">
-                  <Plus className="w-4 h-4 mr-2" /> Add Your First Pick
-                </Button>
-              </div>
-            ) : (
-              watchlist.map(item => (
-                <div key={item.id} className="bg-white border border-sage-200 rounded-xl p-4 flex items-center justify-between hover:border-sage-300 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="text-2xl">
-                      {item.type === "etf" ? "📊" : item.type === "stock" ? "📈" : "🎓"}
+        {filteredWatchlist.length === 0 ? (
+          <div className="bg-white rounded-xl border border-sage-200 p-12 text-center">
+            <p className="text-slate-500 mb-4">Your watchlist is empty</p>
+            <a href="/app/picks" className="inline-block px-6 py-2 bg-sage-800 text-white rounded-lg hover:bg-sage-900 transition-colors">
+              Browse Picks
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredWatchlist.map((item) => (
+              <div key={item.id} className="bg-white rounded-xl border border-sage-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-lg bg-sage-100 flex items-center justify-center">
+                      {item.type === "etf" && <TrendingUp className="w-6 h-6 text-sage-700" />}
+                      {item.type === "stock" && <TrendingUp className="w-6 h-6 text-terracotta-500" />}
+                      {item.type === "bond" && <TrendingDown className="w-6 h-6 text-champagne-500" />}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-lg font-bold text-sage-900">{item.ticker}</span>
-                        <span className="px-2 py-0.5 bg-sage-100 text-sage-800 text-xs rounded uppercase">
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-mono text-xl font-bold text-sage-800">{item.ticker}</h3>
+                        <span className="px-2 py-0.5 bg-sage-100 text-sage-700 text-xs font-medium rounded uppercase">
                           {item.type}
                         </span>
+                        {item.signal && (
+                          <span className={`px-3 py-0.5 text-xs font-semibold rounded-full border ${getSignalColor(item.signal)}`}>
+                            {item.signal.toUpperCase()}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-sm text-sage-600">{item.name}</div>
-                      {item.notes && <div className="text-xs text-sage-500 mt-1">{item.notes}</div>}
+                      <p className="text-slate-600 text-sm">{item.name}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
+
                     <div className="text-right">
-                      <div className="font-mono text-lg text-sage-900">$--</div>
-                      <div className="text-xs font-mono text-green-600">+---%</div>
+                      <div className="font-mono text-2xl font-bold text-sage-900">
+                        {item.price ? `$${item.price.toFixed(2)}` : "—"}
+                      </div>
+                      {item.change_pct !== undefined && (
+                        <div className={`font-mono text-sm font-semibold ${item.price_up ? 'text-[#6DD6A0]' : 'text-[#F09090]'}`}>
+                          {item.price_up ? "+" : ""}{item.change_pct.toFixed(2)}%
+                        </div>
+                      )}
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => removeFromWatchlist(item.id)}
-                      className="text-sage-500 hover:text-red-600"
+
+                    <button
+                      onClick={() => removeFromWatchlist(item.ticker)}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove from watchlist"
                     >
-                      Remove
-                    </Button>
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
 
-          <div className="space-y-6">
-            <div className="bg-white border border-sage-200 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Newspaper className="w-5 h-5 text-sage-700" />
-                <h3 className="font-medium text-sage-900">Market News</h3>
+                {item.notes && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-sm text-slate-600 italic">{item.notes}</p>
+                  </div>
+                )}
               </div>
-              <div className="space-y-3">
-                {news.map((item, i) => (
-                  <div key={i} className="border-b border-sage-100 last:border-0 pb-3 last:pb-0">
-                    <div className="flex items-start gap-2 mb-1">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                        item.sentiment === "positive" ? "bg-green-50 text-green-700" :
-                        item.sentiment === "negative" ? "bg-red-50 text-red-700" :
-                        "bg-amber-50 text-amber-700"
-                      }`}>
-                        {item.sentiment}
-                      </span>
-                      <span className="text-[10px] text-sage-500">{item.datetime}</span>
-                    </div>
-                    <p className="text-sm text-sage-900 leading-snug mb-1">{item.headline}</p>
-                    <p className="text-xs text-sage-500">{item.source}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border border-sage-200 rounded-xl p-6">
-              <h3 className="font-medium text-sage-900 mb-4">Suggested Allocation</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-sage-600"></div>
-                    <span>VTI Core</span>
-                  </div>
-                  <span className="font-mono">60%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-champagne-600"></div>
-                    <span>SCHD Dividend</span>
-                  </div>
-                  <span className="font-mono">20%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-terracotta-600"></div>
-                    <span>QQQ Growth</span>
-                  </div>
-                  <span className="font-mono">15%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-sage-300"></div>
-                    <span>BND Bonds</span>
-                  </div>
-                  <span className="font-mono">5%</span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </AppLayout>
   );
