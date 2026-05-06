@@ -1,61 +1,73 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          response.cookies.set(name, value, options);
+        },
+        remove(name: string, options: any) {
+          response.cookies.delete(name);
+        },
+      },
+    }
+  );
 
-  // Public routes
-  if (req.nextUrl.pathname === "/" || req.nextUrl.pathname.startsWith("/api/")) {
-    return res;
-  }
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // Require auth for /app and /admin routes
-  if (req.nextUrl.pathname.startsWith("/app") || req.nextUrl.pathname.startsWith("/admin")) {
+  // Protect /app routes
+  if (request.nextUrl.pathname.startsWith("/app")) {
     if (!session) {
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = "/";
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // Check onboarding status for /app routes (but not /onboarding itself)
-    if (req.nextUrl.pathname.startsWith("/app") && req.nextUrl.pathname !== "/onboarding") {
+    // Check onboarding for /app routes (except /app/onboarding)
+    if (request.nextUrl.pathname !== "/onboarding") {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("onboarding_completed, role")
+        .select("onboarding_completed")
         .eq("id", session.user.id)
         .single();
 
       if (profile && !profile.onboarding_completed) {
-        const redirectUrl = req.nextUrl.clone();
-        redirectUrl.pathname = "/onboarding";
-        return NextResponse.redirect(redirectUrl);
-      }
-    }
-
-    // Admin route protection
-    if (req.nextUrl.pathname.startsWith("/admin")) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        const redirectUrl = req.nextUrl.clone();
-        redirectUrl.pathname = "/app/dashboard";
-        return NextResponse.redirect(redirectUrl);
+        return NextResponse.redirect(new URL("/onboarding", request.url));
       }
     }
   }
 
-  // Redirect authenticated users away from onboarding if already completed
-  if (req.nextUrl.pathname === "/onboarding" && session) {
+  // Protect /admin routes
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!session) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      return NextResponse.redirect(new URL("/app/dashboard", request.url));
+    }
+  }
+
+  // Protect /onboarding
+  if (request.nextUrl.pathname === "/onboarding") {
+    if (!session) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed")
@@ -63,13 +75,11 @@ export async function middleware(req: NextRequest) {
       .single();
 
     if (profile?.onboarding_completed) {
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = "/app/dashboard";
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL("/app/dashboard", request.url));
     }
   }
 
-  return res;
+  return response;
 }
 
 export const config = {
