@@ -37,6 +37,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     { name: "Picks", href: "/app/picks" },
     { name: "Watchlist", href: "/app/watchlist" },
     { name: "Alerts", href: "/app/alerts" },
+    { name: "Advisor", href: "/app/advisor" },
     { name: "Journal", href: "/app/journal" },
     { name: "Budget", href: "/app/budget" },
     { name: "College Fund", href: "/app/college" },
