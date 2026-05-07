@@ -8,7 +8,12 @@ export interface JournalEntry {
   price: number;
   shares: number;
   trade_date: string;
+  broker?: string;
   notes: string;
+  emotion?: string;
+  exit_price?: number;
+  exit_date?: string;
+  pnl?: number;
   created_at: string;
 }
 
@@ -35,7 +40,9 @@ export const journalService = {
     price: number,
     shares: number,
     trade_date: string,
-    notes: string
+    notes: string,
+    broker?: string,
+    emotion?: string
   ) {
     const { data, error } = await supabase
       .from("journal_entries")
@@ -47,7 +54,28 @@ export const journalService = {
         shares,
         trade_date,
         notes,
+        broker,
+        emotion,
       })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as JournalEntry;
+  },
+
+  async updateEntry(
+    entryId: string,
+    updates: {
+      exit_price?: number;
+      exit_date?: string;
+      pnl?: number;
+    }
+  ) {
+    const { data, error } = await supabase
+      .from("journal_entries")
+      .update(updates)
+      .eq("id", entryId)
       .select()
       .single();
 

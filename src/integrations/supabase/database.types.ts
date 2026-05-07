@@ -146,9 +146,14 @@ export type Database = {
       }
       journal_entries: {
         Row: {
+          broker: string | null
           created_at: string | null
+          emotion: string | null
+          exit_date: string | null
+          exit_price: number | null
           id: string
           notes: string | null
+          pnl: number | null
           price: number
           shares: number
           ticker: string
@@ -157,9 +162,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          broker?: string | null
           created_at?: string | null
+          emotion?: string | null
+          exit_date?: string | null
+          exit_price?: number | null
           id?: string
           notes?: string | null
+          pnl?: number | null
           price: number
           shares: number
           ticker: string
@@ -168,9 +178,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          broker?: string | null
           created_at?: string | null
+          emotion?: string | null
+          exit_date?: string | null
+          exit_price?: number | null
           id?: string
           notes?: string | null
+          pnl?: number | null
           price?: number
           shares?: number
           ticker?: string
