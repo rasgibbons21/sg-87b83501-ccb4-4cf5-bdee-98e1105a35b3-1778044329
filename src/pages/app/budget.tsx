@@ -39,17 +39,20 @@ export default function BudgetPage() {
         .single();
 
       if (profile?.monthly_budget) {
-        // Parse saved budget JSON if it exists
+        // Budget data is stored as Json in Supabase
         try {
-          const budgetData = JSON.parse(profile.monthly_budget);
-          setIncome(budgetData.income || 0);
-          setHousing(budgetData.housing || 0);
-          setFood(budgetData.food || 0);
-          setTransport(budgetData.transport || 0);
-          setChildcare(budgetData.childcare || 0);
-          setBills(budgetData.bills || 0);
-          setLeisure(budgetData.leisure || 0);
-          setCollegeFundPct(budgetData.collegeFundPct || 20);
+          const budgetData = typeof profile.monthly_budget === 'string' 
+            ? JSON.parse(profile.monthly_budget) 
+            : profile.monthly_budget as any;
+            
+          setIncome(Number(budgetData.income) || 0);
+          setHousing(Number(budgetData.housing) || 0);
+          setFood(Number(budgetData.food) || 0);
+          setTransport(Number(budgetData.transport) || 0);
+          setChildcare(Number(budgetData.childcare) || 0);
+          setBills(Number(budgetData.bills) || 0);
+          setLeisure(Number(budgetData.leisure) || 0);
+          setCollegeFundPct(Number(budgetData.collegeFundPct) || 20);
         } catch (e) {
           console.error("Failed to parse budget data", e);
         }
@@ -91,7 +94,7 @@ export default function BudgetPage() {
       await supabase
         .from("profiles")
         .update({
-          monthly_budget: JSON.stringify(budgetData),
+          monthly_budget: budgetData as any,
           invest_monthly: investingBudget
         })
         .eq("id", userId);
