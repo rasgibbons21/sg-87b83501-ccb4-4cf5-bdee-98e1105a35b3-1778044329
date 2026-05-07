@@ -1,26 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app/AppLayout";
 import { GraduationCap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import Link from "next/link";
 
-export default function CollegeFund() {
+export default function CollegeFundPage() {
+  const [userId, setUserId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   const [monthlyContribution, setMonthlyContribution] = useState(200);
   const [childAge, setChildAge] = useState(5);
-  const [annualReturn, setAnnualReturn] = useState(9);
+  const [expectedReturn, setExpectedReturn] = useState(8);
   const [targetCost, setTargetCost] = useState(100000);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
+      setUserId(session.user.id);
+
+      // Load saved college fund settings
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("child_age, college_goal, invest_monthly")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profile) {
+        if (profile.child_age) setChildAge(profile.child_age);
+        if (profile.college_goal) setTargetCost(profile.college_goal);
+        if (profile.invest_monthly) setMonthlyContribution(Math.min(profile.invest_monthly, 1000));
+      }
+
+      setLoading(false);
+    };
+
+    loadUserData();
+  }, []);
+
+  // Auto-save college settings when sliders change
+  useEffect(() => {
+    if (!userId || loading) return;
+
+    const saveSettings = async () => {
+      setSaving(true);
+
+      await supabase
+        .from("profiles")
+        .update({
+          child_age: childAge,
+          college_goal: targetCost
+        })
+        .eq("id", userId);
+
+      setSaving(false);
+    };
+
+    const debounce = setTimeout(saveSettings, 1000);
+    return () => clearTimeout(debounce);
+  }, [childAge, targetCost, userId, loading]);
 
   const yearsToCollege = 18 - childAge;
   const months = yearsToCollege * 12;
-  const monthlyRate = annualReturn / 100 / 12;
+  const monthlyRate = expectedReturn / 100 / 12;
   
   const projectedValue = monthlyContribution * (((1 + monthlyRate) ** months - 1) / monthlyRate);
   const totalContributed = monthlyContribution * months;
   const investmentGrowth = projectedValue - totalContributed;
   const goalProgress = (projectedValue / targetCost) * 100;
 
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="mb-8">
+          <h1 className="font-serif text-4xl text-sage-800 mb-2">College Fund Planner</h1>
+          <p className="text-slate-600">Loading your college fund data...</p>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-96 bg-sage-100 rounded-xl"></div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
+      <div className="mb-8">
+        <h1 className="font-serif text-4xl text-sage-800 mb-2">College Fund Planner</h1>
+        <div className="flex items-center gap-2">
+          <p className="text-slate-600">Project your child's college savings growth</p>
+          {saving && <span className="text-xs text-sage-600 italic">• Saving...</span>}
+        </div>
+      </div>
+
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-serif text-sage-900 mb-2">College Fund Calculator</h1>
@@ -75,14 +154,14 @@ export default function CollegeFund() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm text-sage-600">Expected Annual Return</label>
-                    <span className="font-mono text-lg text-sage-900">{annualReturn}%</span>
+                    <span className="font-mono text-lg text-sage-900">{expectedReturn}%</span>
                   </div>
                   <input
                     type="range"
                     min="4"
                     max="12"
-                    value={annualReturn}
-                    onChange={(e) => setAnnualReturn(Number(e.target.value))}
+                    value={expectedReturn}
+                    onChange={(e) => setExpectedReturn(Number(e.target.value))}
                     className="w-full accent-sage-800"
                   />
                   <div className="flex justify-between text-xs text-sage-500 mt-1">
