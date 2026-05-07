@@ -137,6 +137,63 @@ export default function Picks() {
     return "bg-[#FDEAEA] text-[#C04040] border-[#C04040]";
   };
 
+  const getWhyBuyNow = (pick: Pick): string[] => {
+    const signal = pick.signal?.toLowerCase() || "wait";
+    const ticker = pick.ticker;
+    const price = pick.price || 0;
+    
+    if (signal === "buy") {
+      return [
+        `Current price $${price.toFixed(2)} is in the optimal buy zone (${pick.entry_display})`,
+        `${pick.type === 'etf' ? 'Broad market diversification' : 'Strong fundamentals'} + momentum pointing upward`,
+        `Dollar-cost averaging this month locks in a favorable entry before potential breakout`
+      ];
+    } else if (signal === "hold") {
+      return [
+        `Already at a strong position — no need to chase higher prices right now`,
+        `Current price $${price.toFixed(2)} is above optimal entry range`,
+        `Better to hold existing shares and wait for a pullback to add more`
+      ];
+    } else {
+      return [
+        `Price is outside the safe buy zone — patience pays here`,
+        `Market conditions suggest waiting for better entry point`,
+        `Use this time to research and prepare your strategy for the next dip`
+      ];
+    }
+  };
+
+  const getWhatToDo = (pick: Pick): { budget: number; shares: number; value: number }[] => {
+    const price = pick.price || 1;
+    return [
+      { budget: 50, shares: Number((50 / price).toFixed(4)), value: 50 },
+      { budget: 100, shares: Number((100 / price).toFixed(4)), value: 100 },
+      { budget: 200, shares: Number((200 / price).toFixed(4)), value: 200 }
+    ];
+  };
+
+  const getWhatToWatch = (pick: Pick): string[] => {
+    const signal = pick.signal?.toLowerCase() || "wait";
+    const stopPrice = pick.stop_display || "$—";
+    
+    if (signal === "buy") {
+      return [
+        `If ${pick.ticker} drops below ${stopPrice}, the stop-loss is triggered — reassess position`,
+        `Watch for major sector news or Fed announcements that could shift market sentiment`
+      ];
+    } else if (signal === "hold") {
+      return [
+        `If price falls back into buy zone (${pick.entry_display}), consider adding shares`,
+        `Monitor quarterly earnings — any negative surprise could create a better entry point`
+      ];
+    } else {
+      return [
+        `Set an alert for when price drops to ${pick.entry_display} — that's your buy signal`,
+        `Track the broader market trend — wait for a clear reversal before entering`
+      ];
+    }
+  };
+
   const handleCreateAlert = async (alertType: "above" | "below" | "target" | "stop", alertPrice: number) => {
     if (!userId || !alertModal) return;
 
@@ -307,6 +364,68 @@ export default function Picks() {
                   <Badge className={`${getSignalColor(pick.signal)} border font-semibold uppercase tracking-wide`}>
                     {pick.signal || "WAIT"}
                   </Badge>
+                </div>
+
+                {/* Trading Decision Panel */}
+                <div className="px-6 pb-6">
+                  <div className="bg-gradient-to-br from-sage-800 to-sage-700 rounded-xl p-6 text-white space-y-6">
+                    <div className="text-center border-b border-sage-600 pb-3 mb-4">
+                      <h3 className="font-serif text-xl font-semibold">Trading Decision Panel</h3>
+                      <p className="text-sage-200 text-xs mt-1">Turn information into action</p>
+                    </div>
+
+                    {/* WHY BUY NOW */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-champagne-400 flex items-center justify-center text-sage-900 text-xs font-bold">1</div>
+                        <h4 className="font-semibold text-sm uppercase tracking-wide">Why Buy Now</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-sage-100">
+                        {getWhyBuyNow(pick).map((reason, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-champagne-400 mt-0.5">•</span>
+                            <span>{reason}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* WHAT TO DO */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-champagne-400 flex items-center justify-center text-sage-900 text-xs font-bold">2</div>
+                        <h4 className="font-semibold text-sm uppercase tracking-wide">What To Do</h4>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 space-y-2">
+                        {getWhatToDo(pick).map((option) => (
+                          <div key={option.budget} className="flex items-center justify-between text-sm">
+                            <span className="text-sage-100">If you have <span className="font-mono font-bold text-white">${option.budget}</span> to invest</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sage-200">→</span>
+                              <span className="font-mono font-bold text-champagne-300">{option.shares}</span>
+                              <span className="text-sage-200 text-xs">shares</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* WHAT TO WATCH */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-champagne-400 flex items-center justify-center text-sage-900 text-xs font-bold">3</div>
+                        <h4 className="font-semibold text-sm uppercase tracking-wide">What To Watch</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-sage-100">
+                        {getWhatToWatch(pick).map((warning, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-terracotta-300 mt-0.5">⚠</span>
+                            <span>{warning}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Metrics */}
