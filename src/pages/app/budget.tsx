@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function BudgetPage() {
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedRecently, setSavedRecently] = useState(false);
   
   const [income, setIncome] = useState(0);
   const [housing, setHousing] = useState(0);
@@ -70,6 +71,7 @@ export default function BudgetPage() {
 
     const saveBudget = async () => {
       setSaving(true);
+      setSavedRecently(false);
       
       const totalExpenses = housing + food + transport + childcare + bills + leisure;
       const disposable = income - totalExpenses;
@@ -100,6 +102,10 @@ export default function BudgetPage() {
         .eq("id", userId);
 
       setSaving(false);
+      setSavedRecently(true);
+      
+      // Hide checkmark after 2 seconds
+      setTimeout(() => setSavedRecently(false), 2000);
     };
 
     const debounce = setTimeout(saveBudget, 1000);
@@ -110,6 +116,7 @@ export default function BudgetPage() {
   const disposable = income - totalExpenses;
   const collegeFundAmount = (disposable * collegeFundPct) / 100;
   const investingBudget = disposable - collegeFundAmount;
+  const investmentPct = income > 0 ? (investingBudget / income) * 100 : 0;
 
   const getBarWidth = (amount: number) => {
     if (income === 0) return "0%";
@@ -151,6 +158,20 @@ export default function BudgetPage() {
     document.body.removeChild(link);
   };
 
+  const getAITip = () => {
+    if (investingBudget <= 0) {
+      return "Your expenses equal or exceed your income. Focus on reducing costs or increasing income before investing.";
+    } else if (investingBudget < 50) {
+      return "With less than $50 monthly, start with fractional shares of VTI. Every dollar counts — even $20/month becomes $2,500+ in 5 years at 8% returns.";
+    } else if (investingBudget < 200) {
+      return `$${investingBudget.toFixed(0)}/month is a solid start. Split it 60% VTI and 40% QQQ. Set up automatic monthly purchases on the 1st of each month.`;
+    } else if (investingBudget < 500) {
+      return `Excellent! $${investingBudget.toFixed(0)}/month can build serious wealth. Allocate: 50% VTI, 30% QQQ, 20% SCHD for dividends. You're on track for $35,000+ in 5 years.`;
+    } else {
+      return `Outstanding! With $${investingBudget.toFixed(0)}/month you're in the top 10% of investors. Diversify: 40% VTI, 25% QQQ, 20% SCHD, 10% NVDA, 5% BND. Projected 5-year value: $${((investingBudget * 60) * 1.65).toFixed(0)}.`;
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -170,9 +191,15 @@ export default function BudgetPage() {
     <AppLayout>
       <div className="mb-8">
         <h1 className="font-serif text-4xl text-sage-800 mb-2">Budget Planner</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <p className="text-slate-600">Track your monthly finances and investing capacity</p>
-          {saving && <span className="text-xs text-sage-600 italic">• Saving...</span>}
+          {saving && <span className="text-xs text-sage-600 italic animate-pulse">Saving...</span>}
+          {savedRecently && !saving && (
+            <div className="flex items-center gap-1.5 text-[#2D7A4A] text-xs font-medium">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Saved</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -270,19 +297,85 @@ export default function BudgetPage() {
             </div>
           </div>
 
-          {/* Right Column: Visualization & Results */}
+          {/* Right Column: Summary & Visualization */}
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#E6F7EF] rounded-xl p-6 border border-[#BCE8D3]">
-                <h3 className="text-[#2D6A4F] font-medium text-sm mb-1 uppercase tracking-wider">Monthly College Fund</h3>
-                <div className="font-serif text-4xl text-[#1B4332]">${collegeFundAmount.toFixed(0)}</div>
+            {/* Monthly Summary Card */}
+            <div className="bg-gradient-to-br from-sage-800 to-sage-700 rounded-xl p-8 text-white shadow-lg">
+              <h2 className="font-serif text-2xl mb-6">Monthly Summary</h2>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center justify-between pb-3 border-b border-sage-600">
+                  <span className="text-sage-200 text-sm">Total Income</span>
+                  <span className="font-mono text-xl font-bold">${income.toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between pb-3 border-b border-sage-600">
+                  <span className="text-sage-200 text-sm">Total Expenses</span>
+                  <span className="font-mono text-xl font-bold text-terracotta-300">${totalExpenses.toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between pb-3 border-b border-sage-600">
+                  <span className="text-sage-200 text-sm">Disposable Income</span>
+                  <span className="font-mono text-xl font-bold text-champagne-300">${disposable.toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between pb-3 border-b border-sage-600">
+                  <span className="text-sage-200 text-sm">College Fund</span>
+                  <span className="font-mono text-xl font-bold text-[#6DD6A0]">${collegeFundAmount.toFixed(0)}</span>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-white text-base font-semibold">Available to Invest</span>
+                  <span className="font-mono text-3xl font-bold text-white">${investingBudget.toFixed(0)}</span>
+                </div>
               </div>
-              <div className="bg-sage-50 rounded-xl p-6 border border-sage-200">
-                <h3 className="text-sage-700 font-medium text-sm mb-1 uppercase tracking-wider">Personal Investing</h3>
-                <div className="font-serif text-4xl text-sage-900">${investingBudget.toFixed(0)}</div>
+
+              {/* Investment Percentage Ring */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-32 h-32">
+                  <svg className="w-full h-full transform -rotate-90">
+                    {/* Background circle */}
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeWidth="8"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      fill="none"
+                      stroke="#D4AF6A"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - Math.min(investmentPct / 100, 1))}`}
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="font-mono text-3xl font-bold text-white">{investmentPct.toFixed(0)}%</div>
+                    <div className="text-xs text-sage-200">of income</div>
+                  </div>
+                </div>
               </div>
+              <p className="text-center text-sage-200 text-xs mt-4">
+                {investmentPct >= 15 ? "Excellent savings rate!" : investmentPct >= 10 ? "Good progress!" : "Keep building your budget"}
+              </p>
             </div>
 
+            {/* AI Tip */}
+            <div className="bg-white rounded-xl border border-sage-200 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-champagne-500" />
+                <h3 className="font-serif text-lg text-sage-800">Bloom AI Recommendation</h3>
+              </div>
+              <p className="text-slate-700 leading-relaxed italic">
+                "{getAITip()}"
+              </p>
+            </div>
+
+            {/* Income Allocation Bars */}
             <div className="bg-white rounded-xl border border-sage-200 p-6 shadow-sm">
               <h3 className="font-serif text-xl text-sage-800 mb-6">Income Allocation</h3>
               
