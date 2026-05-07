@@ -1,91 +1,102 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Testimonial {
+  id: string;
+  display_name: string;
+  location: string;
+  situation: string;
+  quote: string;
+  started_with: string;
+  result: string;
+  avatar_emoji: string;
+  image_url?: string;
+}
+
 export function Testimonials() {
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      location: "Atlanta, GA",
-      situation: "Single mom",
-      quote: "I started with $75/month in VTI and SCHD. Four months later my account shows $387.",
-      result: "+18.4% in 4 months",
-      emoji: "👩‍💼"
-    },
-    {
-      name: "Priya K.",
-      location: "Austin, TX",
-      situation: "Stay-at-home mom",
-      quote: "Bloom explained everything without making me feel dumb. Now I manage my own $200/month portfolio.",
-      result: "Portfolio up $1,840",
-      emoji: "👩‍🏫"
-    },
-    {
-      name: "Maria C.",
-      location: "Miami, FL",
-      situation: "Nurse",
-      quote: "I thought I needed thousands. $50/month in QQQ and VTI was enough.",
-      result: "$412 after 6 months",
-      emoji: "👩‍⚕️"
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const fetchTestimonials = async () => {
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching testimonials:", error);
+      return;
     }
-  ];
+
+    // Map testimonials to their AI-generated images
+    const testimonialsWithImages = data?.map((t) => {
+      let imageUrl = "";
+      if (t.display_name === "Sarah M.") imageUrl = "/generated/testimonial-sarah.png";
+      else if (t.display_name === "Priya K.") imageUrl = "/generated/testimonial-priya.png";
+      else if (t.display_name === "Maria C.") imageUrl = "/generated/testimonial-maria.png";
+      
+      return { ...t, image_url: imageUrl };
+    }) || [];
+
+    setTestimonials(testimonialsWithImages);
+  };
 
   return (
-    <section id="stories" className="py-20 bg-[#FAF7F2]">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#C4714A]" />
-            <span className="text-[#C4714A] text-sm font-medium uppercase tracking-wider">
-              Real Stories
+    <section className="py-24 bg-ivory">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-100 rounded-full mb-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-terracotta-500"></div>
+            <span className="text-sm font-medium text-terracotta-600 uppercase tracking-wide">
+              Real Results
             </span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-serif text-[#2D4A3E] mb-4">
-            Women building wealth, $50 at a time
+          <h2 className="font-serif text-5xl text-sage-800 mb-4">
+            Women investing with Bloom
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {testimonials.map((testimonial) => (
             <div
-              key={index}
-              className="bg-white rounded-lg p-6 relative overflow-hidden group hover:shadow-lg transition-shadow"
+              key={testimonial.id}
+              className="bg-white rounded-2xl p-8 shadow-sm border-l-4 border-sage-400 hover:shadow-md transition-shadow"
             >
-              {/* Left border gradient */}
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#2D4A3E] via-[#5E9478] to-[#D4AF6A]" />
+              <div className="text-6xl font-serif text-sage-200 leading-none mb-4">"</div>
               
-              <div className="pl-4">
-                {/* Opening quote mark */}
-                <div className="text-6xl font-serif text-[#A8C9B5] leading-none mb-3">
-                  "
-                </div>
+              <p className="text-slate-700 italic leading-relaxed mb-6">
+                {testimonial.quote}
+              </p>
 
-                {/* Quote text */}
-                <p className="text-slate-700 italic text-base leading-relaxed mb-6">
-                  {testimonial.quote}
-                </p>
-
-                {/* Member info */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl">{testimonial.emoji}</div>
-                    <div>
-                      <div className="font-semibold text-[#2D4A3E]">
-                        {testimonial.name}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {testimonial.location}
-                      </div>
-                      <div className="inline-block mt-1 px-2 py-0.5 bg-[#E8F2ED] text-[#2D4A3E] text-xs rounded-full">
-                        {testimonial.situation}
-                      </div>
-                    </div>
+              <div className="flex items-center gap-4 pt-4 border-t border-sage-100">
+                {testimonial.image_url ? (
+                  <img 
+                    src={testimonial.image_url} 
+                    alt={testimonial.display_name}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-sage-200"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-sage-300 to-champagne-300 flex items-center justify-center text-2xl">
+                    {testimonial.avatar_emoji}
                   </div>
-
-                  {/* Result badge */}
-                  <div className="shrink-0 px-3 py-1.5 bg-[#E8F5EE] border border-[#2D7A4A]/20 rounded-lg">
-                    <div className="text-xs text-slate-600 mb-0.5">Result</div>
-                    <div className="text-sm font-semibold text-[#2D7A4A]">
-                      {testimonial.result}
-                    </div>
-                  </div>
+                )}
+                
+                <div className="flex-1">
+                  <div className="font-semibold text-sage-900">{testimonial.display_name}</div>
+                  <div className="text-sm text-slate-500">{testimonial.location}</div>
+                  <div className="text-xs text-slate-400 mt-1">{testimonial.situation}</div>
                 </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <span className="text-slate-600">Started with {testimonial.started_with}</span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-mono font-semibold text-xs">
+                  {testimonial.result}
+                </span>
               </div>
             </div>
           ))}
