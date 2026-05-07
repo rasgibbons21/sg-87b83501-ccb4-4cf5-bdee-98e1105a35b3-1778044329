@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialView?: "signin" | "signup";
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [view, setView] = useState<"signin" | "signup">("signin");
+export function AuthModal({ isOpen, onClose, initialView = "signup" }: AuthModalProps) {
+  const [view, setView] = useState<"signin" | "signup">(initialView);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +21,16 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [plan, setPlan] = useState<"trial" | "member">("trial");
 
   if (!isOpen) return null;
+
+  useEffect(() => {
+    if (isOpen) {
+      setView(initialView);
+      setError("");
+      setEmail("");
+      setPassword("");
+      setFullName("");
+    }
+  }, [isOpen, initialView]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
